@@ -1,4 +1,4 @@
-const Sale = require("../models/Salemodels");
+const Sale = require("../models/SaleModels");
 const Product = require("../models/ProductModels");
 const Debt = require("../models/DebtModels"); // ✅ Qo‘shilgan
 const response = require("../utils/response");
