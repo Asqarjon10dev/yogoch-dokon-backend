@@ -11,7 +11,7 @@ app.use(express.json());
 // CORS ruxsatlari
 app.use(
   cors({
-    origin: ["http://localhost:3000"], // frontend manzili
+    origin: ["http://localhost:3000", "https://yog-och-do-kon.vercel.app"], // frontend manzili
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
