@@ -14,13 +14,11 @@ router.post("/employee/add", ctrl.addEmployee);
 router.get("/employee/all", ctrl.getAllEmployees);
 router.post("/employee/salary", ctrl.giveSalary);
 router.get("/employee/salaryHistory", ctrl.getSalaryHistory);
-
-
 // 📁 routes/salaryRoutes.js
+router.get("/by-employee/:employeeId", ctrl.getSalaryByEmployeeId);
 
-router.post("/employee/advance", ctrl.giveAdvance);
-router.get("/employee/advance/history", ctrl.getAdvanceHistory);
-router.get("/employee/advance/:employeeId", ctrl.getSalaryByEmployeeId);
+router.post("/employee/advance", ctrl.giveSalary);
+router.get("/employee/advance/history", ctrl.getSalaryHistory);
 
 
 // 📁 routes/employeeRoutes.js yoki salaryRoutes.js
@@ -32,6 +30,7 @@ router.get("/expenseAll", ExpenseController.getAllExpenses);
 router.delete("/expenseDelete/:id", ExpenseController.deleteExpense);
 router.get("/expenseStats", ExpenseController.getExpenseStats);
 router.get("/expenseFilter", ExpenseController.getFilteredExpenses);
+
 
 
 
