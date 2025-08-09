@@ -9,6 +9,7 @@ const saleSchema = new mongoose.Schema(
         code: String,
         quantity: Number,
         price: Number,
+        kub: Number,   
         currency: String,
         cost: Number,
       },

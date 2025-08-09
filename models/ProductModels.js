@@ -1,53 +1,68 @@
-const mongoose = require("mongoose");
+  // 📁 models/Product.js
+  const mongoose = require("mongoose");
 
+  const productSchema = new mongoose.Schema(
+    {
+      code: {
+        type: String,
+        required: true,
+        unique: true,
+      },
+      name: {
+        type: String,
+        required: true,
+      },
+      category: {
+        type: String,
+        required: true,
+      },
 
-const productSchema = new mongoose.Schema(
-  {
-    code: {
-      type: String,
-      required: true,
-      unique: true,
+      width: {
+        type: Number,
+        required: true,
+      },
+      height: {
+        type: Number,
+        required: true,
+      },
+      length: {
+        type: Number,
+        required: true,
+      },
+      unit: {
+        type: String,
+        enum: ["kub", "dona"],
+        required: true,
+        default: "kub", // bu sizning tizimingizga qarab belgilanadi
+      },
+      totalKub: {
+        type: Number,
+        default: 0,
+      },
+      pricePerKub: {
+        type: Number,
+        required: true,
+      },
+      sellPricePerKub: {
+        type: Number,
+        required: true,
+      },
+      totalPrice: {
+        type: Number,
+      },
+      currency: {
+        type: String,
+        enum: ["so'm", "$"],
+        required: true,
+        default: "so'm",
+      },
+      supplier: {
+        type: String,
+      },
     },
-    name: {
-      type: String,
-      required: true,
-    },
-    category: {
-      type: String,
-      required: true,
-    },
-    unit: {
-      type: String,
-      enum: ["dona", "kub"],
-      default: "dona",
-    },
-    width: Number,
-    height: Number,
-    length: Number,
-    kub: Number,
-    quantity: {
-      type: Number,
-      required: true,
-    },
-    price: {
-      type: Number,
-      required: true, // bu kirim (asliy) narx
-    },
-    sellPrice: {
-      type: Number,
-      required: false, // bu sotish narxi (optional)
-    },
-    currency: {
-      type: String,
-      enum: ["so'm", "$"],
-      default: "so'm",
-    },
-    totalPrice: Number,
-    supplier: String,
-  },
-  {
-    timestamps: true,
-  }
-);
-module.exports = mongoose.model("Product", productSchema);
+    {
+      timestamps: true,
+    }
+  );
 
+  module.exports = mongoose.model("Product", productSchema);

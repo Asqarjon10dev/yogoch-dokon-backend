@@ -12,33 +12,41 @@ class SaleController {
         paymentType,
         paidAmount,
         totalAmount,
-        dueAmount,
+        dueAmount, // ✅ to‘g‘risi shu
         dueDate,
         customerName,
         customerPhone,
       } = req.body;
-
+      
+  
       if (!products || !Array.isArray(products) || products.length === 0) {
         return response.error(res, "Mahsulotlar ro'yxati bo'sh bo'lmasligi kerak");
       }
-
+  
       const preparedProducts = [];
-
+  
       for (let item of products) {
         const product = await Product.findById(item.productId);
         if (!product) return response.error(res, `Mahsulot topilmadi: ${item.name}`);
-
-        if (product.quantity < item.quantity) {
-          return response.error(res, `${product.name} mahsuloti yetarli emas`);
-        }
-
-        let singleUnit = 1;
+  
+        // ✅ Ombordagi yetarlilikni tekshirish
         if (product.unit === "kub") {
-          singleUnit = item.kub || 1;
+          if (product.totalKub < item.kub) {
+            return response.error(
+              res,
+              `${product.name} mahsulotidan omborda faqat ${product.totalKub.toFixed(3)} m³ mavjud`
+            );
+          }
         } else {
-          singleUnit = item.quantity;
+          if (product.quantity < item.quantity) {
+            return response.error(
+              res,
+              `${product.name} mahsulotidan omborda faqat ${product.quantity} dona mavjud`
+            );
+          }
         }
-
+  
+        // ✅ Tayyorlanayotgan mahsulot ro'yxatiga qo‘shish
         preparedProducts.push({
           productId: product._id,
           name: product.name,
@@ -47,31 +55,37 @@ class SaleController {
           unit: product.unit,
           quantity: item.quantity,
           kub: item.kub || 0,
-          price: product.sellPrice,
+          price: product.sellPricePerKub,
           currency: product.currency || "so'm",
-          cost: product.price,
+          cost: product.pricePerKub,
         });
-
-        await Product.updateOne(
-          { _id: product._id },
-          { $inc: { quantity: -item.quantity } }
-        );
+  
+        // ✅ Ombordagi miqdorni kamaytirish
+        if (product.unit === "kub") {
+          product.totalKub -= item.kub;
+        } else {
+          product.quantity -= item.quantity;
+        }
+  
+        await product.save();
       }
-
+  
+      // ✅ Sotuvni saqlash
       const sale = new Sale({
         products: preparedProducts,
         paymentType,
         paidAmount,
         totalAmount,
-        dueAmount,
+        dueAmount, 
+
         dueDate,
         customerName,
         customerPhone,
       });
-
+  
       await sale.save();
-
-      // ✅ Agar qarz bo‘lsa - Debt modelga yozamiz
+  
+      // ✅ Agar qarz bo‘lsa - Debt modelga yozish
       if (dueAmount > 0) {
         const debt = new Debt({
           saleId: sale._id,
@@ -83,14 +97,14 @@ class SaleController {
         });
         await debt.save();
       }
-      
-
+  
       return response.created(res, "✅ Sotuv muvaffaqiyatli qo‘shildi", sale);
     } catch (err) {
       console.error("❌ createSale Error:", err.message);
       return response.serverError(res, "Xatolik yuz berdi");
     }
   }
+  
 
   // 🟡 Barcha sotuvlarni olish
   async getAllSales(req, res) {

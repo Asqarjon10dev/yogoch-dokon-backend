@@ -8,65 +8,66 @@ class ProductController {
     try {
       const {
         name,
-        category,       // masalan: "Qarag'ay", "Terak"
-        unit,           // "dona" yoki "kub"
-        width,          // en
-        height,         // balandlik
-        length,         // uzunlik
-        kub,            // agar mavjud bo‘lsa
-        quantity,       // nechta dona
-        price,          // dona/kub narxi
-        currency,       // so'm yoki $
-        supplier,      
-        sellPrice, // 🆕 // optional
-        code            // noyob kod (0001, 0002...)
-      } = req.body;
-
-      // 🔒 Majburiy maydonlar tekshiruvi
-      if (!name || !category || !quantity || !price || !sellPrice || !code || !currency || !unit) {
-        return response.error(res, "Majburiy maydonlar to‘ldirilishi kerak");
-      }
-      
-
-      // 🔁 Kod takrorlanmasligini tekshirish
-      const exists = await Product.findOne({ code });
-      if (exists) {
-        return response.error(res, "Bu kodli mahsulot allaqachon mavjud");
-      }
-
-      // 📐 Kubni avtomatik hisoblash (agar yo‘q bo‘lsa)
-      const calculatedKub =
-        !kub && width && height && length
-          ? ((width * height * length) / 1000000).toFixed(3)
-          : kub;
-
-      // 💰 Umumiy narx hisoblash
-      const totalPrice = (price * quantity).toFixed(2);
-
-      const newProduct = new Product({
-        name,
         category,
-        unit: unit || "dona",
         width,
         height,
         length,
-        kub: calculatedKub,
-        quantity,
-        price,
-        currency: currency || "so'm",
+        pricePerKub,
+        sellPricePerKub,
+        currency,
+        supplier,
+        code,
+      } = req.body;
+  
+      // 🔒 Tekshiruv
+      if (
+        !name ||
+        !category ||
+        !width ||
+        !height ||
+        !length ||
+        !pricePerKub ||
+        !sellPricePerKub ||
+        !currency ||
+        !code
+      ) {
+        return response.error(res, "Majburiy maydonlar to‘ldirilishi kerak");
+      }
+  
+      // 🔁 Kod takrorlanmasligi
+      const exists = await Product.findOne({ code });
+      if (exists) return response.error(res, "Bu kodli mahsulot mavjud");
+  
+      // 📐 Hisoblash (faqat 1 dona mahsulot uchun)
+      const kub = Number((width * height * length).toFixed(4));
+      const totalKub = kub;
+      const totalPrice = Number((pricePerKub * kub).toFixed(2));
+  
+      // ✅ Mahsulotni saqlash
+      const newProduct = new Product({
+        name,
+        category,
+        width,
+        height,
+        length,
+        kub,
+        totalKub,
+        pricePerKub,
+        sellPricePerKub,
         totalPrice,
-        sellPrice,
+        currency,
         supplier,
         code,
       });
-
+  
       const saved = await newProduct.save();
-      return response.created(res, "Mahsulot muvaffaqiyatli qo‘shildi", saved);
+      return response.created(res, "Mahsulot qo‘shildi", saved);
     } catch (err) {
-      console.error("❌ createProduct Error:", err.message);
-      return response.serverError(res, "Serverda xatolik yuz berdi");
+      console.error("createProduct Error:", err.message);
+      return response.serverError(res, "Serverda xatolik");
     }
   }
+  
 
   // 🟡 2. Barcha mahsulotlarni olish
   async getAllProducts(req, res) {

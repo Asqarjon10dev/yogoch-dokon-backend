@@ -2,36 +2,42 @@ const Debt = require("../models/DebtModels");
 const response = require("../utils/response");
 
 class DebtController {
-  // Qarzdorlik qo'shish
-  async addDebt(req, res) {
+  // 🔹 Barcha qarzdorlar ro‘yxatini olish
+// DebtController.js
+async getAllDebts(req, res) {
+  try {
+    const debts = await Debt.find({
+      debtAmount: { $gt: 0 },                 // ✅ 0 dan katta bo‘lsin
+      // yoki: status: { $in: ["qarz", "qisman to‘langan"] }
+    })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: "saleId",
+        select: "products totalAmount createdAt customerName customerPhone",
+      })
+      .lean();
+
+    return response.success(res, "Qarzdorlar ro‘yxati", debts);
+  } catch (e) {
+    return response.serverError(res, "Qarzdorlarni olishda xatolik");
+  }
+}
+
+
+  // 🔹 Qarzdorlikni o‘chirish
+  async deleteDebt(req, res) {
     try {
-      const { customerName, customerPhone, debtAmount, dueDate, saleId } = req.body;
-
-      if (!customerName || !customerPhone || !debtAmount) {
-        return response.error(res, "Majburiy maydonlar to‘ldirilmagan");
-      }
-
-      const newDebt = new Debt({ customerName, customerPhone, debtAmount, dueDate, saleId });
-      const saved = await newDebt.save();
-      return response.created(res, "Qarzdorlik qo‘shildi", saved);
+      const { id } = req.params;
+      const deleted = await Debt.findByIdAndDelete(id);
+      if (!deleted) return response.notFound(res, "Qarzdor topilmadi");
+      return response.success(res, "Qarzdor o‘chirildi", deleted);
     } catch (err) {
-      console.error("addDebt Error:", err.message);
-      return response.serverError(res, "Server xatoligi");
+      console.error("deleteDebt Error:", err.message);
+      return response.serverError(res, "Qarzdorni o‘chirishda xatolik");
     }
   }
 
-  // Barcha qarzdorlar ro‘yxati
-  async getAllDebts(req, res) {
-    try {
-      const debts = await Debt.find().sort({ createdAt: -1 });
-      return response.success(res, "Qarzdorlar ro‘yxati", debts);
-    } catch (err) {
-      console.error("getAllDebts Error:", err.message);
-      return response.serverError(res, "Ro‘yxatni olishda xatolik");
-    }
-  }
-
-  // Qarzni to‘lash
+  // 🔹 Bitta qarzni to‘lash
   async payDebt(req, res) {
     try {
       const { id } = req.params;
@@ -53,49 +59,42 @@ class DebtController {
       }
 
       const updated = await debt.save();
-      return response.success(res, "To‘lov bajarildi", updated);
+      return response.success(res, "To‘lov muvaffaqiyatli bajarildi", updated);
     } catch (err) {
       console.error("payDebt Error:", err.message);
       return response.serverError(res, "To‘lovni amalga oshirishda xatolik");
     }
   }
 
-  async payAllDebts (req, res) {  
+  // 🔹 Bir nechta qarzlarni bulk to‘lash
+  async payAllDebts(req, res) {
     try {
-      const { debts } = req.body; // debts - [{ id, amount }, ...]
-      if (!Array.isArray(debts) || debts.length === 0) {
-        return response.error(res, "To‘lovlar ro‘yxati bo‘sh");
+      const { debtIds } = req.body;
+
+      if (!Array.isArray(debtIds) || debtIds.length === 0) {
+        return response.error(res, "Qarzlar ro‘yxati bo‘sh");
       }
 
       const results = [];
-      for (const { id, amount } of debts) {
+
+      for (const id of debtIds) {
         const debt = await Debt.findById(id);
         if (!debt) {
-          results.push({ id, status: "not found" });
+          results.push({ id, status: "topilmadi" });
           continue;
         }
 
-        if (amount <= 0 || isNaN(amount)) {
-          results.push({ id, status: "invalid amount" });
-          continue;
-        }
-
-        if (amount >= debt.debtAmount) {
-          debt.debtAmount = 0;
-          debt.status = "to‘langan";
-        } else {
-          debt.debtAmount -= amount;
-          debt.status = "qisman to‘langan";
-        }
+        debt.debtAmount = 0;
+        debt.status = "to‘langan";
 
         const updated = await debt.save();
-        results.push({ id: updated._id, status: "paid", remaining: updated.debtAmount });
+        results.push({ id: updated._id, status: "to‘landi" });
       }
 
-      return response.success(res, "Barcha to‘lovlar bajarildi", results);
+      return response.success(res, "Barcha qarzlar to‘landi", results);
     } catch (err) {
       console.error("payAllDebts Error:", err.message);
-      return response.serverError(res, "To‘lovlarni amalga oshirishda xatolik");
+      return response.serverError(res, "Bulk to‘lovda xatolik");
     }
   }
 }

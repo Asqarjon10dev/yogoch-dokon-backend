@@ -11,8 +11,8 @@ app.use(express.json());
 // CORS ruxsatlari
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://yog-och-do-kon.vercel.app"], // frontend manzili
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: ["http://localhost:3000", "https://yog-och-do-kon.vercel.app"], // frontend manzillari
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ✅ PATCH qo‘shildi
     credentials: true,
   })
 );

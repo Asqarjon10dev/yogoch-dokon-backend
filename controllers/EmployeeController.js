@@ -1,6 +1,8 @@
 const Employee = require("../models/EmployeeModels");
 const SalaryHistory = require("../models/SalaryHistoryModel");
 const jwt = require("jsonwebtoken");
+const AdvanceHistory = require("../models/AdvanceHistoryModel"); // ⬅️ qo'shish shart
+
 const response = require("../utils/response"); // ✅ Asosiy response moduli
 
 // 🟢 Login
@@ -26,13 +28,14 @@ exports.login = async (req, res) => {
     return response.success(res, "Tizimga muvaffaqiyatli kirdingiz", {
       token,
       employeeId: employee._id,
-      jobType: employee.jobType, // 🔴 Bu joy juda muhim!
+      jobType: employee.jobType,
     });
   } catch (err) {
     console.log(err);
     return response.serverError(res, "Serverda xatolik");
   }
 };
+
 
 // 🟢 Ishchi qo‘shish
 exports.addEmployee = async (req, res) => {
@@ -92,15 +95,45 @@ exports.giveSalary = async (req, res) => {
 exports.getSalaryByEmployeeId = async (req, res) => {
   try {
     const { employeeId } = req.params;
-
-    const salaryList = await Salary.find({ employeeId }).populate("employeeId");
-
-    success(res, salaryList, "Login bo‘lgan ishchining oyliklari");
+    const salaryList = await SalaryHistory.find({ employeeId }).populate("employeeId");
+    return response.success(res, "Login bo‘lgan ishchining oyliklari", salaryList);
   } catch (err) {
     console.log(err);
-    error(res, "Server xatoligi");
+    return response.serverError(res, "Server xatoligi");
   }
 };
+
+// 🟢 Avans berish
+exports.giveAdvance = async (req, res) => {
+  try {
+    const { employeeId, amount, note = "" } = req.body;
+
+    if (!employeeId || !amount) {
+      return response.error(res, "employeeId va amount majburiy");
+    }
+
+    const employee = await Employee.findById(employeeId);
+    if (!employee) return response.notFound(res, "Ishchi topilmadi");
+
+    const created = await AdvanceHistory.create({ employeeId, amount, note });
+    return response.success(res, "Avans berildi", created);
+  } catch (err) {
+    console.error("giveAdvance error:", err);
+    return response.serverError(res, "Avans berishda xatolik");
+  }
+};
+
+// 🟢 Avans tarixi (barchasi)
+exports.getAdvanceHistory = async (req, res) => {
+  try {
+    const list = await AdvanceHistory.find().populate("employeeId").sort({ createdAt: -1 });
+    return response.success(res, "Avans tarixi", list);
+  } catch (err) {
+    console.error("getAdvanceHistory error:", err);
+    return response.serverError(res, "Avans tarixini olishda xatolik");
+  }
+};
+
 
 
 // 🟢 Oylik tarixi (Admin yoki Menejer uchun barcha, boshqalar uchun faqat o‘ziki)
